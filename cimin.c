@@ -8,6 +8,8 @@ int checkerror(char input[]);
 void Reduce(char *str, char program_n[], char err[], char outputfile[]);
 void handler(int sig);
 
+char *reducestring = NULL;
+
 //main function recives 4 arguments.
 int main(int argc, char *argv[]){
   signal(SIGINT, handler);
@@ -78,21 +80,22 @@ int main(int argc, char *argv[]){
       temp = strchr(temp, '\n');
   }
   printf("%s\n", str);
+  reducestring = (char *)malloc(strlen(str));
 
   //Doing Delta Debugging
   Reduce(str, program_n, err, outputfile);
-
-  printf("%s",str);
-
   free(str);
+  printf("finally: %s\n", reducestring);
+  free(reducestring);
 }
 
 //Recurcively Reduce the inputfile finding the error parts.
 void Reduce(char *str, char program_n[], char err[], char outputfile[]){
+  printf("inpustring: %s\n",str);
   int input_size = strlen(str);
   int mid_size = input_size-1;
   int index_t, hplustsize, tailsize, headsize;
-  printf("strnow: %s\n",str);
+
   while(mid_size>0){
     hplustsize = input_size-mid_size;
     //check head and tail
@@ -103,12 +106,13 @@ void Reduce(char *str, char program_n[], char err[], char outputfile[]){
       char *head, *tail, *hplust;
       //There is no head
       if(headsize==0){
-        head = NULL;
         tail = (char *) malloc(sizeof(char)*tailsize+1);
         strncpy(tail, str + (index_t), tailsize);
         printf("tail: %s\n",tail);
         if(checkerror(tail) != 0){
-          strcpy(str, tail);
+          memmove(str + index_t, str + index_t + tailsize, strlen(str) - index_t - tailsize + 1);
+          printf("reducedstr: %s\n",str);
+          Reduce(tail, program_n, err, outputfile);
           Reduce(str, program_n, err, outputfile);
           free(tail);
           return;
@@ -122,8 +126,10 @@ void Reduce(char *str, char program_n[], char err[], char outputfile[]){
         strncpy(head, str + 0, headsize);
         printf("head: %s\n",head);
         if(checkerror(head) != 0){
-          strcpy(str, tail);
+          memmove(str, str + headsize, strlen(str) - headsize + 1);
+          printf("reducedstr: %s\n",str);
           Reduce(str, program_n, err, outputfile);
+          Reduce(head, program_n, err, outputfile);
           free(head);
           return;
         }
@@ -139,8 +145,11 @@ void Reduce(char *str, char program_n[], char err[], char outputfile[]){
         hplust = strcat(head, tail);
         printf("hplust: %s\n",hplust);
         if(checkerror(hplust) != 0){
-          strcpy(str, hplust);
-          Reduce(str, program_n, err, outputfile);
+          memmove(str + index_t, str + index_t + tailsize, strlen(str) - index_t - tailsize + 1);
+          memmove(str, str + headsize, strlen(str) - headsize + 1);
+          printf("reducedstr: %s\n",str);
+          Reduce(str,program_n, err, outputfile);
+          Reduce(hplust, program_n, err, outputfile);
           free(hplust);
           free(head);
           free(tail);
@@ -161,14 +170,21 @@ void Reduce(char *str, char program_n[], char err[], char outputfile[]){
       strncpy(mid, str + i, mid_size);
       printf("mid: %s\n",mid);
       if(checkerror(mid) != 0){
-        strcpy(str, mid);
-        Reduce(str, program_n, err, outputfile);
+        memmove(str + i, str + i + mid_size, strlen(str) - i - mid_size + 1);
+        printf("reducedstr: %s\n",str);
+        Reduce(str,program_n, err, outputfile);
+        Reduce(mid, program_n, err, outputfile);
         free(mid);
         return;
       }
       free(mid);
     }
     mid_size = mid_size-1;
+  }
+  if(checkerror(str) != 0){
+    printf("add to reducestring: %s\n",str);
+    strcat(reducestring,str);
+    printf("ooooooooo: %s\n",reducestring);
   }
 }
 
@@ -177,6 +193,7 @@ void handler(int sig){
   if(sig == SIGINT){
     printf("Do you want to quit?");
     if(getchar() == 'y')
+      printf("%s",reducestring);
       exit(0);
   }
 }
@@ -184,8 +201,8 @@ void handler(int sig){
 
 //테스트용 함수
 int checkerror(char input[]){
-  printf("check: %s\n",input);
-  if(strstr(input, "wo")){
+  //printf("check: %s\n",input);
+  if(strstr(input, "o") || strstr(input, "l")){
     return 1;
   }
   return 0;
