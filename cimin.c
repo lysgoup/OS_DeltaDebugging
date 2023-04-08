@@ -84,9 +84,12 @@ int main(int argc, char *argv[]){
 
   //Doing Delta Debugging
   Reduce(str, program_n, err, outputfile);
-  free(str);
-  printf("finally: %s\n", reducestring);
+  if(strlen(reducestring) == 0){
+    printf("finally: %s\n", str);
+  }
+  else printf("finally: %s\n", reducestring);
   free(reducestring);
+  free(str);
 }
 
 //Recurcively Reduce the inputfile finding the error parts.
@@ -202,7 +205,7 @@ void handler(int sig){
 //테스트용 함수
 int checkerror(char input[]){
   //printf("check: %s\n",input);
-  if(strstr(input, "o") || strstr(input, "l")){
+  if(strstr(input, "z")){
     return 1;
   }
   return 0;
